@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/go-redis/redis/v7/internal/util"
+	"github.com/go-redis/redis/v8/internal/util"
 )
 
 const (
@@ -23,6 +23,8 @@ const Nil = RedisError("redis: nil")
 type RedisError string
 
 func (e RedisError) Error() string { return string(e) }
+
+func (RedisError) RedisError() {}
 
 //------------------------------------------------------------------------------
 

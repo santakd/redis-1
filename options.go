@@ -12,7 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-redis/redis/v7/internal/pool"
+	"github.com/go-redis/redis/v8/internal"
+	"github.com/go-redis/redis/v8/internal/pool"
 )
 
 // Limiter is the interface of a rate limiter or a circuit breaker.
@@ -40,8 +41,13 @@ type Options struct {
 	// Hook that is called when new connection is established.
 	OnConnect func(*Conn) error
 
+	// Use the specified Username to authenticate the current connection with one of the connections defined in the ACL
+	// list when connecting to a Redis 6.0 instance, or greater, that is using the Redis ACL system.
+	Username string
+
 	// Optional password. Must match the password specified in the
-	// requirepass server configuration option.
+	// requirepass server configuration option (if connecting to a Redis 5.0 instance, or lower),
+	// or the User Password when connecting to a Redis 6.0 instance, or greater, that is using the Redis ACL system.
 	Password string
 	// Database to be selected after connecting to the server.
 	DB int
@@ -187,6 +193,7 @@ func ParseURL(redisURL string) (*Options, error) {
 	}
 
 	if u.User != nil {
+		o.Username = u.User.Username()
 		if p, ok := u.User.Password(); ok {
 			o.Password = p
 		}
@@ -231,7 +238,13 @@ func ParseURL(redisURL string) (*Options, error) {
 func newConnPool(opt *Options) *pool.ConnPool {
 	return pool.NewConnPool(&pool.Options{
 		Dialer: func(ctx context.Context) (net.Conn, error) {
-			return opt.Dialer(ctx, opt.Network, opt.Addr)
+			var conn net.Conn
+			err := internal.WithSpan(ctx, "dialer", func(ctx context.Context) error {
+				var err error
+				conn, err = opt.Dialer(ctx, opt.Network, opt.Addr)
+				return err
+			})
+			return conn, err
 		},
 		PoolSize:           opt.PoolSize,
 		MinIdleConns:       opt.MinIdleConns,

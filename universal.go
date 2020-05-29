@@ -22,6 +22,7 @@ type UniversalOptions struct {
 
 	Dialer             func(ctx context.Context, network, addr string) (net.Conn, error)
 	OnConnect          func(*Conn) error
+	Username           string
 	Password           string
 	MaxRetries         int
 	MinRetryBackoff    time.Duration
@@ -60,6 +61,7 @@ func (o *UniversalOptions) Cluster() *ClusterOptions {
 		Dialer:    o.Dialer,
 		OnConnect: o.OnConnect,
 
+		Username: o.Username,
 		Password: o.Password,
 
 		MaxRedirects:   o.MaxRedirects,
@@ -99,6 +101,7 @@ func (o *UniversalOptions) Failover() *FailoverOptions {
 		OnConnect: o.OnConnect,
 
 		DB:       o.DB,
+		Username: o.Username,
 		Password: o.Password,
 
 		MaxRetries:      o.MaxRetries,
@@ -133,6 +136,7 @@ func (o *UniversalOptions) Simple() *Options {
 		OnConnect: o.OnConnect,
 
 		DB:       o.DB,
+		Username: o.Username,
 		Password: o.Password,
 
 		MaxRetries:      o.MaxRetries,
@@ -164,13 +168,11 @@ type UniversalClient interface {
 	Cmdable
 	Context() context.Context
 	AddHook(Hook)
-	Watch(fn func(*Tx) error, keys ...string) error
-	Do(args ...interface{}) *Cmd
-	DoContext(ctx context.Context, args ...interface{}) *Cmd
-	Process(cmd Cmder) error
-	ProcessContext(ctx context.Context, cmd Cmder) error
-	Subscribe(channels ...string) *PubSub
-	PSubscribe(channels ...string) *PubSub
+	Watch(ctx context.Context, fn func(*Tx) error, keys ...string) error
+	Do(ctx context.Context, args ...interface{}) *Cmd
+	Process(ctx context.Context, cmd Cmder) error
+	Subscribe(ctx context.Context, channels ...string) *PubSub
+	PSubscribe(ctx context.Context, channels ...string) *PubSub
 	Close() error
 }
 

@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/go-redis/redis/v7/internal"
+	"github.com/go-redis/redis/v8/internal"
 )
 
 var ErrClosed = errors.New("redis: client is closed")
@@ -94,7 +94,9 @@ func NewConnPool(opt *Options) *ConnPool {
 		closedCh:  make(chan struct{}),
 	}
 
+	p.connsMu.Lock()
 	p.checkMinIdleConns()
+	p.connsMu.Unlock()
 
 	if opt.IdleTimeout > 0 && opt.IdleCheckFrequency > 0 {
 		go p.reaper(opt.IdleCheckFrequency)
